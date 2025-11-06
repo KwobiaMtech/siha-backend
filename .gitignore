@@ -1,0 +1,73 @@
+# Binaries
+healthypay
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go build artifacts
+*.test
+*.out
+go.work
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+config.json
+secrets.json
+
+# Logs and temporary files
+logs/
+*.log
+tmp/
+temp/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Coverage and test reports
+coverage.out
+coverage.html
+*.cover
+
+# Vendor directory
+vendor/
+
+# Docker volumes and data
+docker-data/
+volumes/
+
+# Certificates and keys
+*.crt
+*.csr
+ssl/
+certs/
+
+# Backup files
+*.bak
+*.backup
+*.old
