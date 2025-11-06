@@ -1,0 +1,415 @@
+{
+	"info": {
+		"_postman_id": "healthypay-complete-api",
+		"name": "HealthyPay Complete Backend API",
+		"description": "Comprehensive API collection for HealthyPay backend services",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "🔐 Authentication",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "register"]
+						}
+					},
+					"response": [{
+						"name": "Success",
+						"status": "Created",
+						"code": 201,
+						"body": "{\n  \"message\": \"User registered successfully. Please verify your email.\",\n  \"userId\": \"64f7b8c9e1234567890abcde\",\n  \"email\": \"user@example.com\"\n}"
+					}]
+				},
+				{
+					"name": "Login User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('auth_token', response.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "login"]
+						}
+					},
+					"response": [{
+						"name": "Success",
+						"status": "OK",
+						"code": 200,
+						"body": "{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"user\": {\n    \"id\": \"64f7b8c9e1234567890abcde\",\n    \"email\": \"user@example.com\",\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"isVerified\": true\n  }\n}"
+					}]
+				},
+				{
+					"name": "Setup PIN",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Authorization", "value": "Bearer {{auth_token}}"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pin\": \"1234\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/setup-pin",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "setup-pin"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "💰 Wallet Management",
+			"item": [
+				{
+					"name": "Get Wallet Balance",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{auth_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/wallet/balance",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "wallet", "balance"]
+						}
+					},
+					"response": [{
+						"name": "Success",
+						"status": "OK",
+						"code": 200,
+						"body": "{\n  \"type\": \"blockchain\",\n  \"blockchain\": \"stellar\",\n  \"wallet\": {\n    \"id\": \"64f7b8c9e1234567890abcde\",\n    \"balances\": [\n      {\n        \"assetCode\": \"USDC\",\n        \"balance\": 1000.50,\n        \"symbol\": \"USDC\"\n      }\n    ]\n  }\n}"
+					}]
+				},
+				{
+					"name": "Create Blockchain Wallet",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Authorization", "value": "Bearer {{auth_token}}"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"blockchain\": \"stellar\",\n  \"network\": \"testnet\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/wallet/create-blockchain",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "wallet", "create-blockchain"]
+						}
+					}
+				},
+				{
+					"name": "Get Supported Blockchains",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{auth_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/wallet/supported-blockchains",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "wallet", "supported-blockchains"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "💸 Send Money Flow",
+			"item": [
+				{
+					"name": "Get Payment Methods",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{auth_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/send/payment-methods",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "send", "payment-methods"]
+						}
+					},
+					"response": [{
+						"name": "Success",
+						"status": "OK",
+						"code": 200,
+						"body": "{\n  \"paymentMethods\": [\n    {\n      \"id\": \"wallet_balance\",\n      \"title\": \"💰 Wallet Balance\",\n      \"balance\": 2540.50,\n      \"type\": \"wallet\",\n      \"hasBalance\": true\n    },\n    {\n      \"id\": \"pm_64f7b8c9e1234567890abcde\",\n      \"title\": \"📱 MTN Mobile Money\",\n      \"type\": \"mobile_money\",\n      \"provider\": \"MTN\"\n    }\n  ]\n}"
+					}]
+				},
+				{
+					"name": "Get Recipients",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{auth_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/send/recipients",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "send", "recipients"]
+						}
+					}
+				},
+				{
+					"name": "Send Money",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Authorization", "value": "Bearer {{auth_token}}"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"paymentMethodId\": \"wallet_balance\",\n  \"recipientName\": \"John Doe\",\n  \"recipientAccount\": \"0244123456\",\n  \"recipientType\": \"mobile_money\",\n  \"recipientNetwork\": \"MTN\",\n  \"amount\": 100.00,\n  \"investmentPercentage\": 5.0,\n  \"donationChoice\": \"profit\",\n  \"description\": \"Money transfer\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/send/money",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "send", "money"]
+						}
+					},
+					"response": [{
+						"name": "Success",
+						"status": "OK",
+						"code": 200,
+						"body": "{\n  \"message\": \"Money sent successfully\",\n  \"transaction\": {\n    \"id\": \"64f7b8c9e1234567890abcde\",\n    \"amount\": 100.00,\n    \"investmentAmount\": 5.00,\n    \"status\": \"completed\"\n  }\n}"
+					}]
+				}
+			]
+		},
+		{
+			"name": "🏦 PSP Management",
+			"item": [
+				{
+					"name": "Get Available PSPs",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{auth_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/psp/providers",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "psp", "providers"]
+						}
+					},
+					"response": [{
+						"name": "Success",
+						"status": "OK",
+						"code": 200,
+						"body": "{\n  \"providers\": [\"ogate\", \"mtn\", \"demo\"],\n  \"message\": \"Available PSP providers\"\n}"
+					}]
+				},
+				{
+					"name": "Get PSP Recommendation",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{auth_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/psp/recommend?provider=MTN",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "psp", "recommend"],
+							"query": [{"key": "provider", "value": "MTN"}]
+						}
+					},
+					"response": [{
+						"name": "Success",
+						"status": "OK",
+						"code": 200,
+						"body": "{\n  \"provider\": \"MTN\",\n  \"selectedPSP\": \"mtn\",\n  \"message\": \"Recommended PSP for provider\"\n}"
+					}]
+				},
+				{
+					"name": "Test PSP Connection",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "Bearer {{auth_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/psp/test/ogate",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "psp", "test", "ogate"]
+						}
+					},
+					"response": [{
+						"name": "Success",
+						"status": "OK",
+						"code": 200,
+						"body": "{\n  \"psp\": \"ogate\",\n  \"status\": \"connected\",\n  \"message\": \"PSP connection test successful\"\n}"
+					}]
+				}
+			]
+		},
+		{
+			"name": "⭐ Stellar Blockchain",
+			"item": [
+				{
+					"name": "Get Stellar Wallet Info",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{auth_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/stellar/info",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "stellar", "info"]
+						}
+					}
+				},
+				{
+					"name": "Create Stellar Wallet",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Authorization", "value": "Bearer {{auth_token}}"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"network\": \"testnet\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/stellar/wallet",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "stellar", "wallet"]
+						}
+					}
+				},
+				{
+					"name": "Send USDC",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Authorization", "value": "Bearer {{auth_token}}"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"toAddress\": \"GXXX...\",\n  \"amount\": 10.00,\n  \"memo\": \"Test transfer\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/stellar/send-usdc",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "stellar", "send-usdc"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📊 Transactions",
+			"item": [
+				{
+					"name": "Get Transactions",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{auth_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/transactions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "transactions"]
+						}
+					},
+					"response": [{
+						"name": "Success",
+						"status": "OK",
+						"code": 200,
+						"body": "{\n  \"transactions\": [\n    {\n      \"id\": \"64f7b8c9e1234567890abcde\",\n      \"amount\": 100.00,\n      \"recipientName\": \"John Doe\",\n      \"status\": \"completed\",\n      \"createdAt\": \"2024-10-25T12:00:00Z\"\n    }\n  ]\n}"
+					}]
+				}
+			]
+		},
+		{
+			"name": "📱 Mobile Money",
+			"item": [
+				{
+					"name": "Add Mobile Wallet",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Authorization", "value": "Bearer {{auth_token}}"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"provider\": \"MTN\",\n  \"phoneNumber\": \"0244123456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/mobile-money/add-wallet",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "mobile-money", "add-wallet"]
+						}
+					}
+				},
+				{
+					"name": "Get Mobile Wallets",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{auth_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/mobile-money/wallets",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "mobile-money", "wallets"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🏥 Health Check",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/health",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "health"]
+						}
+					},
+					"response": [{
+						"name": "Success",
+						"status": "OK",
+						"code": 200,
+						"body": "{\n  \"status\": \"healthy\",\n  \"message\": \"Backend is running\"\n}"
+					}]
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

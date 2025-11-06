@@ -1,0 +1,154 @@
+### Register User
+POST http://localhost:8080/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123",
+  "firstName": "John",
+  "lastName": "Doe",
+  "phoneNumber": "+1234567890"
+}
+
+### Login User
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### Google Login
+POST http://localhost:8080/api/v1/auth/google
+Content-Type: application/json
+
+{
+  "idToken": "google_id_token_here",
+  "email": "user@gmail.com",
+  "name": "John Doe",
+  "googleId": "google_user_id",
+  "photoUrl": "https://example.com/photo.jpg"
+}
+
+### Facebook Login
+POST http://localhost:8080/api/v1/auth/facebook
+Content-Type: application/json
+
+{
+  "accessToken": "facebook_access_token_here",
+  "email": "user@facebook.com",
+  "name": "John Doe",
+  "facebookId": "facebook_user_id",
+  "photoUrl": "https://example.com/photo.jpg"
+}
+
+### Apple Login
+POST http://localhost:8080/api/v1/auth/apple
+Content-Type: application/json
+
+{
+  "identityToken": "apple_identity_token_here",
+  "email": "user@privaterelay.appleid.com",
+  "name": "John Doe",
+  "appleId": "apple_user_id"
+}
+
+### Send OTP
+POST http://localhost:8080/api/v1/otp/send
+Content-Type: application/json
+
+{
+  "phoneNumber": "+1234567890"
+}
+
+### Verify OTP
+POST http://localhost:8080/api/v1/otp/verify
+Content-Type: application/json
+
+{
+  "phoneNumber": "+1234567890",
+  "code": "123456"
+}
+
+### Get Profile (requires token)
+GET http://localhost:8080/api/v1/user/profile
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+### Update Profile (requires token)
+PUT http://localhost:8080/api/v1/user/profile
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+{
+  "firstName": "John Updated",
+  "lastName": "Doe Updated",
+  "phoneNumber": "+1234567890"
+}
+
+### Upload KYC Document (requires token)
+POST http://localhost:8080/api/v1/kyc/upload-document
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+{
+  "documentType": "passport",
+  "documentUrl": "https://example.com/document.jpg"
+}
+
+### Setup Profile (requires token)
+POST http://localhost:8080/api/v1/kyc/setup-profile
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+{
+  "dateOfBirth": "1990-01-01",
+  "address": "123 Main St",
+  "city": "New York",
+  "state": "NY",
+  "country": "USA",
+  "postalCode": "10001",
+  "occupation": "Software Engineer"
+}
+
+### Get Wallet Balance (requires token)
+GET http://localhost:8080/api/v1/wallet/balance
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+### Add Funds (requires token)
+POST http://localhost:8080/api/v1/wallet/add-funds
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+{
+  "amount": 100.00
+}
+
+### Send Money (requires token)
+POST http://localhost:8080/api/v1/transactions/send
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+{
+  "toUserEmail": "recipient@example.com",
+  "amount": 50.00,
+  "description": "Payment for services"
+}
+
+### Get Transactions (requires token)
+GET http://localhost:8080/api/v1/transactions
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+### Create Investment (requires token)
+POST http://localhost:8080/api/v1/investments
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+{
+  "amount": 200.00,
+  "type": "health_savings"
+}
+
+### Get Investments (requires token)
+GET http://localhost:8080/api/v1/investments
+Authorization: Bearer YOUR_JWT_TOKEN_HERE

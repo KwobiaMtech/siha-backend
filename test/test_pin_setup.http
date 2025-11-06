@@ -1,0 +1,32 @@
+### Test PIN Setup Flow
+
+# 1. First login to get token
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "workfreekmail@gmail.com",
+  "password": "password123"
+}
+
+### 
+
+# 2. Setup PIN (use token from login response)
+POST http://localhost:8080/api/v1/auth/setup-pin
+Content-Type: application/json
+Authorization: Bearer YOUR_TOKEN_HERE
+
+{
+  "pin": "1234"
+}
+
+### 
+
+# 3. Login again to verify hasPIN is true
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "workfreekmail@gmail.com",
+  "password": "password123"
+}

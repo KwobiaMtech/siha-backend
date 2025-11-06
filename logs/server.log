@@ -1,0 +1,57 @@
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /api/v1/health            --> healthy_pay_backend/internal/routes.SetupRoutes.func1 (4 handlers)
+[GIN-debug] GET    /api/v1/test-payment-flow --> healthy_pay_backend/internal/handlers.(*AuthHandler).TestPaymentFlow-fm (4 handlers)
+[GIN-debug] POST   /api/v1/auth/register     --> healthy_pay_backend/internal/handlers.(*AuthHandler).Register-fm (4 handlers)
+[GIN-debug] POST   /api/v1/auth/login        --> healthy_pay_backend/internal/handlers.(*AuthHandler).Login-fm (4 handlers)
+[GIN-debug] POST   /api/v1/auth/verify-email --> healthy_pay_backend/internal/handlers.(*AuthHandler).VerifyEmail-fm (4 handlers)
+[GIN-debug] POST   /api/v1/auth/test-email   --> healthy_pay_backend/internal/handlers.(*AuthHandler).TestEmail-fm (4 handlers)
+[GIN-debug] POST   /api/v1/auth/google       --> healthy_pay_backend/internal/handlers.(*SocialHandler).GoogleLogin-fm (4 handlers)
+[GIN-debug] POST   /api/v1/auth/facebook     --> healthy_pay_backend/internal/handlers.(*SocialHandler).FacebookLogin-fm (4 handlers)
+[GIN-debug] POST   /api/v1/auth/apple        --> healthy_pay_backend/internal/handlers.(*SocialHandler).AppleLogin-fm (4 handlers)
+[GIN-debug] POST   /api/v1/otp/send          --> healthy_pay_backend/internal/handlers.(*OTPHandler).SendOTP-fm (4 handlers)
+[GIN-debug] POST   /api/v1/otp/verify        --> healthy_pay_backend/internal/handlers.(*OTPHandler).VerifyOTP-fm (4 handlers)
+[GIN-debug] GET    /api/v1/test              --> healthy_pay_backend/internal/routes.SetupRoutes.func2 (5 handlers)
+[GIN-debug] POST   /api/v1/auth/setup-pin    --> healthy_pay_backend/internal/handlers.(*AuthHandler).SetupPIN-fm (5 handlers)
+[GIN-debug] POST   /api/v1/auth/setup-payment-method --> healthy_pay_backend/internal/handlers.(*AuthHandler).SetupPaymentMethod-fm (5 handlers)
+[GIN-debug] GET    /api/v1/auth/payment-method --> healthy_pay_backend/internal/handlers.(*AuthHandler).GetPaymentMethod-fm (5 handlers)
+[GIN-debug] GET    /api/v1/user/profile      --> healthy_pay_backend/internal/handlers.(*UserHandler).GetProfile-fm (5 handlers)
+[GIN-debug] PUT    /api/v1/user/profile      --> healthy_pay_backend/internal/handlers.(*UserHandler).UpdateProfile-fm (5 handlers)
+[GIN-debug] POST   /api/v1/kyc/upload-document --> healthy_pay_backend/internal/handlers.(*KYCHandler).UploadDocument-fm (5 handlers)
+[GIN-debug] POST   /api/v1/kyc/setup-profile --> healthy_pay_backend/internal/handlers.(*KYCHandler).SetupProfile-fm (5 handlers)
+[GIN-debug] GET    /api/v1/wallet            --> healthy_pay_backend/internal/handlers.(*WalletHandler).GetBalance-fm (5 handlers)
+[GIN-debug] GET    /api/v1/wallet/balance    --> healthy_pay_backend/internal/handlers.(*WalletHandler).GetBalance-fm (5 handlers)
+[GIN-debug] POST   /api/v1/wallet/add-funds  --> healthy_pay_backend/internal/handlers.(*WalletHandler).AddFunds-fm (5 handlers)
+[GIN-debug] GET    /api/v1/send/payment-methods --> healthy_pay_backend/internal/handlers.(*TransactionHandler).GetPaymentMethods-fm (5 handlers)
+[GIN-debug] GET    /api/v1/send/recipients   --> healthy_pay_backend/internal/handlers.(*TransactionHandler).GetRecipients-fm (5 handlers)
+[GIN-debug] GET    /api/v1/send/delivery-options --> healthy_pay_backend/internal/handlers.(*TransactionHandler).GetRecipientDeliveryOptions-fm (5 handlers)
+[GIN-debug] GET    /api/v1/send/mobile-networks --> healthy_pay_backend/internal/handlers.(*TransactionHandler).GetMobileNetworks-fm (5 handlers)
+[GIN-debug] POST   /api/v1/send/money        --> healthy_pay_backend/internal/handlers.(*TransactionHandler).SendMoney-fm (5 handlers)
+[GIN-debug] POST   /api/v1/mobile-money/add-wallet --> healthy_pay_backend/internal/handlers.(*MobileMoneyHandler).AddMobileWallet-fm (5 handlers)
+[GIN-debug] GET    /api/v1/mobile-money/wallets --> healthy_pay_backend/internal/handlers.(*MobileMoneyHandler).GetMobileWallets-fm (5 handlers)
+[GIN-debug] POST   /api/v1/transactions/send --> healthy_pay_backend/internal/handlers.(*TransactionHandler).SendMoney-fm (5 handlers)
+[GIN-debug] GET    /api/v1/transactions/     --> healthy_pay_backend/internal/handlers.(*TransactionHandler).GetTransactions-fm (5 handlers)
+[GIN-debug] GET    /api/v1/stellar/info      --> healthy_pay_backend/internal/handlers.(*StellarWalletHandler).GetWalletInfo-fm (5 handlers)
+[GIN-debug] POST   /api/v1/stellar/wallet    --> healthy_pay_backend/internal/handlers.(*StellarWalletHandler).CreateWallet-fm (5 handlers)
+[GIN-debug] GET    /api/v1/stellar/wallet    --> healthy_pay_backend/internal/handlers.(*StellarWalletHandler).GetWallet-fm (5 handlers)
+[GIN-debug] POST   /api/v1/stellar/send-usdc --> healthy_pay_backend/internal/handlers.(*StellarWalletHandler).SendUSDC-fm (5 handlers)
+[GIN-debug] GET    /api/v1/stellar/transactions --> healthy_pay_backend/internal/handlers.(*StellarWalletHandler).GetTransactions-fm (5 handlers)
+[GIN-debug] GET    /api/v1/stellar/asset-info --> healthy_pay_backend/internal/handlers.(*StellarWalletHandler).GetAssetInfo-fm (5 handlers)
+[GIN-debug] GET    /api/v1/stellar/trustlines --> healthy_pay_backend/internal/handlers.(*StellarWalletHandler).GetTrustlines-fm (5 handlers)
+[GIN-debug] POST   /api/v1/stellar/trustlines --> healthy_pay_backend/internal/handlers.(*StellarWalletHandler).CreateTrustline-fm (5 handlers)
+[GIN-debug] POST   /api/v1/investments/      --> healthy_pay_backend/internal/handlers.(*InvestmentHandler).CreateInvestment-fm (5 handlers)
+[GIN-debug] GET    /api/v1/investments/      --> healthy_pay_backend/internal/handlers.(*InvestmentHandler).GetInvestments-fm (5 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8080
+✅ Account created: GDAIKU66RT2ZP4G53PX3J6DSDMFZMZAVE7Z5NY2MPLGIUWKAWJRF7Q3T (TX: 6013e189b42c0fcf7899265353c79c61eccf671a78b77b96de01ad3ef59afe3a)
+✅ Trustline created: USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5 (TX: 1d24fa5643c9f3506eba6f193879780e776a1c015ba1ab212e7011616c00b32b)
+2025/10/21 00:29:11 Email sent successfully. Status: 201, Message ID: <202510210029.21932744288@smtp-relay.mailin.fr>
+2025/10/21 00:29:11 ✅ Verification email sent to stellar_testnet_1761006540@example.com via Brevo
+[GIN] 2025/10/21 - 00:29:11 | 201 | 10.560593542s |             ::1 | POST     "/api/v1/auth/register"
+[GIN] 2025/10/21 - 00:29:12 | 200 |  800.389875ms |             ::1 | POST     "/api/v1/auth/login"
+[GIN] 2025/10/21 - 00:29:12 | 200 |    1.604292ms |             ::1 | GET      "/api/v1/stellar/wallet"

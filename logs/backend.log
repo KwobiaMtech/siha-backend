@@ -1,0 +1,35 @@
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /api/v1/health            --> healthy_pay_backend/internal/routes.SetupRoutes.func1 (4 handlers)
+[GIN-debug] POST   /api/v1/auth/register     --> healthy_pay_backend/internal/handlers.(*AuthHandler).Register-fm (4 handlers)
+[GIN-debug] POST   /api/v1/auth/login        --> healthy_pay_backend/internal/handlers.(*AuthHandler).Login-fm (4 handlers)
+[GIN-debug] POST   /api/v1/auth/verify-email --> healthy_pay_backend/internal/handlers.(*AuthHandler).VerifyEmail-fm (4 handlers)
+[GIN-debug] POST   /api/v1/auth/test-email   --> healthy_pay_backend/internal/handlers.(*AuthHandler).TestEmail-fm (4 handlers)
+[GIN-debug] POST   /api/v1/auth/google       --> healthy_pay_backend/internal/handlers.(*SocialHandler).GoogleLogin-fm (4 handlers)
+[GIN-debug] POST   /api/v1/auth/facebook     --> healthy_pay_backend/internal/handlers.(*SocialHandler).FacebookLogin-fm (4 handlers)
+[GIN-debug] POST   /api/v1/auth/apple        --> healthy_pay_backend/internal/handlers.(*SocialHandler).AppleLogin-fm (4 handlers)
+[GIN-debug] POST   /api/v1/otp/send          --> healthy_pay_backend/internal/handlers.(*OTPHandler).SendOTP-fm (4 handlers)
+[GIN-debug] POST   /api/v1/otp/verify        --> healthy_pay_backend/internal/handlers.(*OTPHandler).VerifyOTP-fm (4 handlers)
+[GIN-debug] GET    /api/v1/test              --> healthy_pay_backend/internal/routes.SetupRoutes.func2 (5 handlers)
+[GIN-debug] POST   /api/v1/auth/setup-pin    --> healthy_pay_backend/internal/handlers.(*AuthHandler).SetupPIN-fm (5 handlers)
+[GIN-debug] POST   /api/v1/auth/setup-payment-method --> healthy_pay_backend/internal/handlers.(*AuthHandler).SetupPaymentMethod-fm (5 handlers)
+[GIN-debug] GET    /api/v1/auth/payment-method --> healthy_pay_backend/internal/handlers.(*AuthHandler).GetPaymentMethod-fm (5 handlers)
+[GIN-debug] GET    /api/v1/user/profile      --> healthy_pay_backend/internal/handlers.(*UserHandler).GetProfile-fm (5 handlers)
+[GIN-debug] PUT    /api/v1/user/profile      --> healthy_pay_backend/internal/handlers.(*UserHandler).UpdateProfile-fm (5 handlers)
+[GIN-debug] POST   /api/v1/kyc/upload-document --> healthy_pay_backend/internal/handlers.(*KYCHandler).UploadDocument-fm (5 handlers)
+[GIN-debug] POST   /api/v1/kyc/setup-profile --> healthy_pay_backend/internal/handlers.(*KYCHandler).SetupProfile-fm (5 handlers)
+[GIN-debug] GET    /api/v1/wallet/balance    --> healthy_pay_backend/internal/handlers.(*WalletHandler).GetBalance-fm (5 handlers)
+[GIN-debug] POST   /api/v1/wallet/add-funds  --> healthy_pay_backend/internal/handlers.(*WalletHandler).AddFunds-fm (5 handlers)
+[GIN-debug] POST   /api/v1/transactions/send --> healthy_pay_backend/internal/handlers.(*TransactionHandler).SendMoney-fm (5 handlers)
+[GIN-debug] GET    /api/v1/transactions/     --> healthy_pay_backend/internal/handlers.(*TransactionHandler).GetTransactions-fm (5 handlers)
+[GIN-debug] POST   /api/v1/investments/      --> healthy_pay_backend/internal/handlers.(*InvestmentHandler).CreateInvestment-fm (5 handlers)
+[GIN-debug] GET    /api/v1/investments/      --> healthy_pay_backend/internal/handlers.(*InvestmentHandler).GetInvestments-fm (5 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8080
+[GIN-debug] [ERROR] listen tcp :8080: bind: address already in use
+2025/10/13 20:16:25 listen tcp :8080: bind: address already in use
