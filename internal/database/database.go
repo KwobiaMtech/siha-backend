@@ -3,6 +3,8 @@ package database
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -23,5 +25,29 @@ func Connect(uri string) (*mongo.Database, error) {
 		return nil, fmt.Errorf("failed to ping MongoDB: %w", err)
 	}
 
-	return client.Database("healthy_pay"), nil
+	// Extract database name from URI
+	dbName := extractDatabaseName(uri)
+	
+	return client.Database(dbName), nil
+}
+
+func extractDatabaseName(uri string) string {
+	parsed, err := url.Parse(uri)
+	if err != nil {
+		return "siha" // fallback
+	}
+	
+	// Remove leading slash from path
+	dbName := strings.TrimPrefix(parsed.Path, "/")
+	
+	// Remove query parameters if any
+	if idx := strings.Index(dbName, "?"); idx != -1 {
+		dbName = dbName[:idx]
+	}
+	
+	if dbName == "" {
+		return "siha" // fallback
+	}
+	
+	return dbName
 }
