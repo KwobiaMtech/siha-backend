@@ -57,6 +57,7 @@ func NewStellarBlockchainService(db interface{}) *StellarBlockchainService {
 		horizonClient:         &horizonclient.Client{HorizonURL: horizonURL},
 		distributorSecretKey:  distributorSecret,
 		distributorPublicKey:  distributorPublic,
+		stellarService:        NewStellarService(),
 	}
 }
 
