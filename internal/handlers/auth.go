@@ -25,6 +25,43 @@ func NewAuthHandler(db *mongo.Database) *AuthHandler {
 	return &AuthHandler{db: db}
 }
 
+func (h *AuthHandler) ValidateEmail(c *gin.Context) {
+	var req struct {
+		Email string `json:"email" binding:"required,email"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	collection := h.db.Collection("users")
+	
+	var existingUser models.User
+	err := collection.FindOne(context.Background(), bson.M{"email": req.Email}).Decode(&existingUser)
+	
+	if err == nil {
+		// User exists
+		c.JSON(http.StatusOK, gin.H{
+			"exists": true,
+			"message": "Email is already registered",
+		})
+		return
+	}
+	
+	if err == mongo.ErrNoDocuments {
+		// User doesn't exist - email is available
+		c.JSON(http.StatusOK, gin.H{
+			"exists": false,
+			"message": "Email is available",
+		})
+		return
+	}
+	
+	// Database error
+	c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+}
+
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req struct {
 		Email     string `json:"email" binding:"required,email"`

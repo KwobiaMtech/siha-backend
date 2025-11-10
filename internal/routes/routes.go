@@ -33,6 +33,7 @@ func SetupRoutes(r *gin.Engine, db *mongo.Database) {
 
 		auth := api.Group("/auth")
 		{
+			auth.POST("/validate-email", authHandler.ValidateEmail)
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
 			auth.POST("/verify-email", authHandler.VerifyEmail)
