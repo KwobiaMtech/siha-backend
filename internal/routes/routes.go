@@ -37,8 +37,6 @@ func SetupRoutes(r *gin.Engine, db *mongo.Database) {
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
 			auth.POST("/verify-email", authHandler.VerifyEmail)
-			auth.POST("/test-email", authHandler.TestEmail)
-			auth.POST("/test-wallet", authHandler.TestWalletCreation)
 			auth.POST("/google", socialHandler.GoogleLogin)
 			auth.POST("/facebook", socialHandler.FacebookLogin)
 			auth.POST("/apple", socialHandler.AppleLogin)
