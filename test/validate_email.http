@@ -1,0 +1,39 @@
+### Test validate-email route
+
+### 1. Check if email exists (should return exists: true if user already registered)
+POST http://localhost:8080/api/auth/validate-email
+Content-Type: application/json
+
+{
+  "email": "existing@example.com"
+}
+
+### 2. Check if email is available (should return exists: false)
+POST http://localhost:8080/api/auth/validate-email
+Content-Type: application/json
+
+{
+  "email": "newuser@example.com"
+}
+
+### 3. Test invalid email format (should return 400 error)
+POST http://localhost:8080/api/auth/validate-email
+Content-Type: application/json
+
+{
+  "email": "invalid-email"
+}
+
+### 4. Test missing email field (should return 400 error)
+POST http://localhost:8080/api/auth/validate-email
+Content-Type: application/json
+
+{}
+
+### 5. Test empty email (should return 400 error)
+POST http://localhost:8080/api/auth/validate-email
+Content-Type: application/json
+
+{
+  "email": ""
+}
