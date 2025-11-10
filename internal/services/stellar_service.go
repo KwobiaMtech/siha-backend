@@ -37,8 +37,8 @@ type GlobalConfig struct {
 }
 
 func LoadConfig() *GlobalConfig {
-	// Load .env file from parent directory
-	loadEnvFile("../.env")
+	// Load .env file from current directory
+	loadEnvFile(".env")
 	
 	// Check both APP_ENV and environment variables
 	appEnv := getEnv("APP_ENV", "dev")
