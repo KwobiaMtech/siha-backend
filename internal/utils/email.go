@@ -98,19 +98,28 @@ func SendVerificationEmail(email, code string) error {
 	htmlContent := createVerificationEmailHTML(code)
 	textContent := createVerificationEmailText(code)
 
-	// Use only Brevo integration
-	if emailService.brevoSender == nil {
-		return fmt.Errorf("Brevo API key not configured - please set BREVO_API_KEY environment variable")
+	// Try SMTP first if configured
+	if os.Getenv("EMAIL_PROVIDER") == "smtp" || os.Getenv("BREVO_API_KEY") == "" {
+		err := SendRealEmail(email, subject, htmlContent, textContent)
+		if err == nil {
+			log.Printf("✅ Verification email sent to %s via SMTP", email)
+			return nil
+		}
+		log.Printf("⚠️ SMTP failed: %v, trying Brevo...", err)
 	}
 
-	err := emailService.brevoSender.SendEmail(email, "", subject, htmlContent, textContent)
-	if err != nil {
-		log.Printf("❌ Failed to send email via Brevo: %v", err)
-		return fmt.Errorf("failed to send email via Brevo: %w", err)
+	// Fallback to Brevo if available
+	if emailService.brevoSender != nil {
+		err := emailService.brevoSender.SendEmail(email, "", subject, htmlContent, textContent)
+		if err != nil {
+			log.Printf("❌ Failed to send email via Brevo: %v", err)
+			return fmt.Errorf("failed to send email via both SMTP and Brevo: %w", err)
+		}
+		log.Printf("✅ Verification email sent to %s via Brevo", email)
+		return nil
 	}
 
-	log.Printf("✅ Verification email sent to %s via Brevo", email)
-	return nil
+	return fmt.Errorf("no email service configured - please set SMTP credentials or BREVO_API_KEY")
 }
 
 func createVerificationEmailHTML(code string) string {

@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -50,16 +51,81 @@ func (h *AuthHandler) ValidateEmail(c *gin.Context) {
 	}
 	
 	if err == mongo.ErrNoDocuments {
-		// User doesn't exist - email is available
+		// User doesn't exist - email is available, send OTP
+		code := utils.GenerateOTP()
+		
+		// Send verification email with OTP
+		if err := utils.SendVerificationEmail(req.Email, code); err != nil {
+			log.Printf("Failed to send verification email: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send verification email"})
+			return
+		}
+		
+		// Store OTP temporarily (you might want to use Redis or a temporary collection)
+		otpCollection := h.db.Collection("email_otps")
+		_, err = otpCollection.InsertOne(context.Background(), bson.M{
+			"email": req.Email,
+			"otp": code,
+			"createdAt": time.Now(),
+			"expiresAt": time.Now().Add(15 * time.Minute), // 15 minutes expiry
+		})
+		
+		if err != nil {
+			log.Printf("Failed to store OTP: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process request"})
+			return
+		}
+		
 		c.JSON(http.StatusOK, gin.H{
 			"exists": false,
-			"message": "Email is available",
+			"message": "Email is available. Verification code sent to your email.",
+			"otpSent": true,
 		})
 		return
 	}
-	
-	// Database error
-	c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+}
+
+func (h *AuthHandler) VerifyEmailOTP(c *gin.Context) {
+	var req struct {
+		Email string `json:"email" binding:"required,email"`
+		OTP   string `json:"otp" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Find and verify OTP
+	otpCollection := h.db.Collection("email_otps")
+	var otpDoc struct {
+		Email     string    `bson:"email"`
+		OTP       string    `bson:"otp"`
+		CreatedAt time.Time `bson:"createdAt"`
+		ExpiresAt time.Time `bson:"expiresAt"`
+	}
+
+	err := otpCollection.FindOne(context.Background(), bson.M{
+		"email": req.Email,
+		"otp":   req.OTP,
+		"expiresAt": bson.M{"$gt": time.Now()},
+	}).Decode(&otpDoc)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid or expired OTP"})
+		return
+	}
+
+	// OTP is valid, delete it
+	otpCollection.DeleteOne(context.Background(), bson.M{
+		"email": req.Email,
+		"otp":   req.OTP,
+	})
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Email verified successfully",
+		"verified": true,
+	})
 }
 
 func (h *AuthHandler) Register(c *gin.Context) {
@@ -429,6 +495,57 @@ func (h *AuthHandler) TestEmail(c *gin.Context) {
 		"email": req.Email,
 		"code": testCode,
 		"note": "Check your email for the verification code",
+	})
+}
+
+func (h *AuthHandler) SendVerification(c *gin.Context) {
+	var req struct {
+		Email string `json:"email" binding:"required,email"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	collection := h.db.Collection("users")
+	
+	var user models.User
+	err := collection.FindOne(context.Background(), bson.M{"email": req.Email}).Decode(&user)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	if user.IsVerified {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email is already verified"})
+		return
+	}
+
+	verificationCode := utils.GenerateOTP()
+	
+	_, err = collection.UpdateOne(
+		context.Background(),
+		bson.M{"email": req.Email},
+		bson.M{"$set": bson.M{
+			"verification_code": verificationCode,
+			"updated_at":        time.Now(),
+		}},
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update verification code"})
+		return
+	}
+
+	err = utils.SendVerificationEmail(req.Email, verificationCode)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send verification email"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Verification code sent successfully",
+		"email":   req.Email,
 	})
 }
 
