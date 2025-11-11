@@ -1,0 +1,32 @@
+### Test validate email endpoint - Valid email
+POST http://localhost:8080/api/v1/auth/validate-email
+Content-Type: application/json
+
+{
+  "email": "test@example.com"
+}
+
+### Test validate email endpoint - Invalid email format
+POST http://localhost:8080/api/v1/auth/validate-email
+Content-Type: application/json
+
+{
+  "email": "invalid-email"
+}
+
+### Test validate email endpoint - Empty email
+POST http://localhost:8080/api/v1/auth/validate-email
+Content-Type: application/json
+
+{
+  "email": ""
+}
+
+### Test verify email endpoint
+POST http://localhost:8080/api/v1/auth/verify-email
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "code": "123456"
+}
