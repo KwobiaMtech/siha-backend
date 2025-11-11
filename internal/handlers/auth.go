@@ -116,11 +116,20 @@ func (h *AuthHandler) VerifyEmailOTP(c *gin.Context) {
 		return
 	}
 
-	// OTP is valid, delete it
-	otpCollection.DeleteOne(context.Background(), bson.M{
+	// OTP is valid, mark as verified instead of deleting
+	_, err = otpCollection.UpdateOne(context.Background(), bson.M{
 		"email": req.Email,
 		"otp":   req.OTP,
+	}, bson.M{
+		"$set": bson.M{
+			"verified": true,
+			"verifiedAt": time.Now(),
+		},
 	})
+
+	if err != nil {
+		log.Printf("Failed to mark OTP as verified: %v", err)
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Email verified successfully",
@@ -158,13 +167,35 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	// Generate email verification code
 	verificationCode := utils.GenerateOTP()
+	isVerified := false
+	
+	// Check if email has already been OTP verified
+	otpCollection := h.db.Collection("email_otps")
+	var verifiedOTP struct {
+		Email     string    `bson:"email"`
+		Verified  bool      `bson:"verified"`
+		CreatedAt time.Time `bson:"createdAt"`
+	}
+	
+	// Look for a verified OTP record for this email (within last 30 minutes)
+	err = otpCollection.FindOne(context.Background(), bson.M{
+		"email": req.Email,
+		"verified": true,
+		"createdAt": bson.M{"$gt": time.Now().Add(-30 * time.Minute)},
+	}).Decode(&verifiedOTP)
+	
+	if err == nil {
+		// Email was already OTP verified, mark as verified
+		isVerified = true
+		log.Printf("✅ Email %s already OTP verified, skipping verification email", req.Email)
+	}
 
 	user := models.User{
 		Email:            req.Email,
 		Password:         hashedPassword,
 		FirstName:        req.FirstName,
 		LastName:         req.LastName,
-		IsVerified:       false,
+		IsVerified:       isVerified,
 		VerificationCode: verificationCode,
 		KYCStatus:        "pending",
 		CreatedAt:        time.Now(),
@@ -190,11 +221,18 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		}
 	}
 	
-	// Send verification email
-	err = utils.SendVerificationEmail(req.Email, verificationCode)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send verification email"})
-		return
+	// Send verification email only if not already OTP verified
+	if !isVerified {
+		err = utils.SendVerificationEmail(req.Email, verificationCode)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send verification email"})
+			return
+		}
+		log.Printf("📧 Verification email sent to %s", req.Email)
+	} else {
+		// Clean up the OTP record since registration is complete
+		otpCollection.DeleteMany(context.Background(), bson.M{"email": req.Email})
+		log.Printf("🧹 Cleaned up OTP records for %s", req.Email)
 	}
 
 	user.ID = userID
