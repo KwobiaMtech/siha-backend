@@ -66,6 +66,7 @@ func (h *AuthHandler) ValidateEmail(c *gin.Context) {
 		_, err = otpCollection.InsertOne(context.Background(), bson.M{
 			"email": req.Email,
 			"otp": code,
+			"verified": false,
 			"createdAt": time.Now(),
 			"expiresAt": time.Now().Add(15 * time.Minute), // 15 minutes expiry
 		})
@@ -85,6 +86,44 @@ func (h *AuthHandler) ValidateEmail(c *gin.Context) {
 	}
 }
 
+// CheckEmailVerified checks if an email has been OTP verified
+func (h *AuthHandler) CheckEmailVerified(c *gin.Context) {
+	var req struct {
+		Email string `json:"email" binding:"required,email"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	otpCollection := h.db.Collection("email_otps")
+	var verifiedOTP struct {
+		Email      string    `bson:"email"`
+		Verified   bool      `bson:"verified"`
+		VerifiedAt time.Time `bson:"verifiedAt"`
+	}
+
+	err := otpCollection.FindOne(context.Background(), bson.M{
+		"email": req.Email,
+		"verified": true,
+	}).Decode(&verifiedOTP)
+
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"verified": false,
+			"message": "Email not verified",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"verified": true,
+		"message": "Email is verified",
+		"verifiedAt": verifiedOTP.VerifiedAt,
+	})
+}
+
 func (h *AuthHandler) VerifyEmailOTP(c *gin.Context) {
 	var req struct {
 		Email string `json:"email" binding:"required,email"`
@@ -101,6 +140,7 @@ func (h *AuthHandler) VerifyEmailOTP(c *gin.Context) {
 	var otpDoc struct {
 		Email     string    `bson:"email"`
 		OTP       string    `bson:"otp"`
+		Verified  bool      `bson:"verified"`
 		CreatedAt time.Time `bson:"createdAt"`
 		ExpiresAt time.Time `bson:"expiresAt"`
 	}
@@ -108,6 +148,7 @@ func (h *AuthHandler) VerifyEmailOTP(c *gin.Context) {
 	err := otpCollection.FindOne(context.Background(), bson.M{
 		"email": req.Email,
 		"otp":   req.OTP,
+		"verified": false,
 		"expiresAt": bson.M{"$gt": time.Now()},
 	}).Decode(&otpDoc)
 
