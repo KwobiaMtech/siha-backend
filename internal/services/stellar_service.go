@@ -313,6 +313,9 @@ func (s *StellarService) CreateAccount(destinationPublicKey string) (string, err
 }
 
 func (s *StellarService) EstablishTrustLine(userPublicKey, userPrivateKey string) error {
+	if s.config == nil {
+		return fmt.Errorf("stellar service not properly initialized: config is nil")
+	}
 	if s.config.Stellar.DistributorSecretKey == "" {
 		return fmt.Errorf("STELLAR_DISTRIBUTOR_SECRET_KEY is not configured")
 	}

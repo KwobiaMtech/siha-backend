@@ -135,6 +135,8 @@ deploy: ## Deploy to production
 	@echo "$(GREEN)Production deployment completed!$(NC)"
 
 docker-deploy: ## Build Docker image and deploy container
+	@echo "$(YELLOW)Stopping and removing old containers...$(NC)"
+	-$(DOCKER_COMPOSE) down 2>/dev/null || true
 	@$(MAKE) docker-build
 	@echo "$(YELLOW)Deploying container...$(NC)"
 	$(DOCKER_COMPOSE) up -d
