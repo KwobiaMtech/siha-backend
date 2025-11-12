@@ -252,15 +252,15 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	userID := result.InsertedID.(primitive.ObjectID)
 	
 	// Create default blockchain wallet
-	blockchainServiceFactory := services.NewBlockchainServiceFactory(h.db)
-	blockchainService := blockchainServiceFactory.GetService("stellar")
-	if blockchainService != nil {
-		_, err = blockchainService.CreateWallet(userID, "stellar")
-		if err != nil {
-			// Log error but don't fail registration
-			fmt.Printf("⚠️ Failed to create blockchain wallet for user %s: %v\n", userID.Hex(), err)
-		}
-	}
+	// blockchainServiceFactory := services.NewBlockchainServiceFactory(h.db)
+	// blockchainService := blockchainServiceFactory.GetService("stellar")
+	// if blockchainService != nil {
+	// 	_, err = blockchainService.CreateWallet(userID, "stellar")
+	// 	if err != nil {
+	// 		// Log error but don't fail registration
+	// 		fmt.Printf("⚠️ Failed to create blockchain wallet for user %s: %v\n", userID.Hex(), err)
+	// 	}
+	// }
 	
 	// Send verification email only if not already OTP verified
 	if !isVerified {
