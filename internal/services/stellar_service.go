@@ -384,7 +384,6 @@ func (s *StellarService) EstablishTrustLine(userPublicKey, userPrivateKey string
 				// Create USDC trustline
 				&txnbuild.ChangeTrust{
 					Line:          txnbuild.ChangeTrustAssetWrapper{Asset: usdcAsset},
-					Limit:         "1000000",
 					SourceAccount: userKp.Address(),
 				},
 				// End sponsorship for trustline
