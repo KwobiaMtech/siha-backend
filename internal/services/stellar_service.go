@@ -354,6 +354,20 @@ func (s *StellarService) EstablishTrustLine(userPublicKey, userPrivateKey string
 		return fmt.Errorf("failed to load sponsor account: %v", err)
 	}
 
+	// Check if sponsor has minimum 3 XLM
+	for _, balance := range sponsorAccount.Balances {
+		if balance.Asset.Type == "native" {
+			xlmBalance, err := strconv.ParseFloat(balance.Balance, 64)
+			if err != nil {
+				return fmt.Errorf("failed to parse XLM balance: %v", err)
+			}
+			if xlmBalance < 3.0 {
+				return fmt.Errorf("distributor account has insufficient XLM balance: %.2f (minimum 3.0 required)", xlmBalance)
+			}
+			break
+		}
+	}
+
 	// Create USDC asset
 	usdcAsset := txnbuild.CreditAsset{
 		Code:   "USDC",
