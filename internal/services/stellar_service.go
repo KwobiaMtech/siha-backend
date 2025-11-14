@@ -312,6 +312,8 @@ func (s *StellarService) CreateAccount(destinationPublicKey string) (string, err
 	return resp.Hash, nil
 }
 
+
+
 func (s *StellarService) EstablishTrustLine(userPublicKey, userPrivateKey string) error {
 	if s.config == nil {
 		return fmt.Errorf("stellar service not properly initialized: config is nil")
