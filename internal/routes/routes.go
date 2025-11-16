@@ -22,6 +22,7 @@ func SetupRoutes(r *gin.Engine, db *mongo.Database) {
 	stellarWalletHandler := handlers.NewStellarWalletHandler(db)
 	pspHandler := handlers.NewPSPHandler(db)
 	rateHandler := handlers.NewRateHandler()
+	depositHandler := handlers.NewDepositHandler(db)
 
 	// Public routes
 	api := r.Group("/api/v1")
@@ -149,6 +150,14 @@ func SetupRoutes(r *gin.Engine, db *mongo.Database) {
 			rates.GET("/offramp", rateHandler.GetOfframpRate)
 			rates.GET("/convert", rateHandler.ConvertAmount)
 			rates.GET("/all", rateHandler.GetAllRates)
+		}
+
+		// Deposit routes
+		deposits := protected.Group("/deposits")
+		{
+			deposits.POST("/initiate", depositHandler.InitiateDeposit)
+			deposits.GET("/:id/status", depositHandler.CheckDepositStatus)
+			deposits.GET("/", depositHandler.GetDeposits)
 		}
 	}
 }
