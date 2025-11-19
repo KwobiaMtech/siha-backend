@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -60,7 +59,6 @@ func (h *DepositHandler) InitiateDeposit(c *gin.Context) {
 		InvestmentPercentage: req.InvestmentPercentage,
 		DonationChoice:       req.DonationChoice,
 		Status:               "pending",
-		QueueStatus:          "queued",
 		PSPReference:         reference,
 		CreatedAt:            time.Now(),
 		UpdatedAt:            time.Now(),
@@ -78,7 +76,7 @@ func (h *DepositHandler) InitiateDeposit(c *gin.Context) {
 	var pspResponse *services.CollectionResponse
 	if paymentMethod.Type == "mobile_money" {
 		collectionReq := services.CollectionRequest{
-			Amount:      req.Amount * 100, // Convert to pesewas
+			Amount:      req.Amount,
 			PhoneNumber: paymentMethod.PhoneNumber,
 			Provider:    paymentMethod.Network,
 			Reference:   reference,
@@ -87,22 +85,21 @@ func (h *DepositHandler) InitiateDeposit(c *gin.Context) {
 		pspResponse, err = h.pspService.InitiateCollection(collectionReq)
 		if err != nil {
 			// Update deposit status to failed
-			h.updateDepositStatus(deposit.ID, "failed", "failed", nil)
+			h.updateDepositStatus(deposit.ID, "failed", nil)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initiate payment collection"})
 			return
 		}
 
-		// Update deposit with PSP response and queue status
-		h.updateDepositStatus(deposit.ID, "initiated", "processing", pspResponse)
+		// Update deposit with PSP response
+		h.updateDepositStatus(deposit.ID, "initiated", pspResponse)
 		deposit.TransactionID = pspResponse.TransactionID
 		deposit.Status = "initiated"
-		deposit.QueueStatus = "processing"
 	}
 
 	response := models.DepositResponse{
 		ID:            deposit.ID.Hex(),
 		Status:        deposit.Status,
-		Message:       "Deposit initiated successfully and added to processing queue",
+		Message:       "Deposit initiated successfully",
 		TransactionID: deposit.TransactionID,
 		PSPResponse:   pspResponse,
 	}
@@ -152,21 +149,12 @@ func (h *DepositHandler) CheckDepositStatus(c *gin.Context) {
 			pspStatus, err := h.pspService.CheckCollectionStatus(deposit.TransactionID)
 			if err == nil && pspStatus != deposit.Status {
 				// Update status if changed
-				queueStatus := "processing"
-				if pspStatus == "collected" {
-					queueStatus = "completed"
-				} else if pspStatus == "failed" {
-					queueStatus = "failed"
-				}
-				
-				h.updateDepositStatus(deposit.ID, pspStatus, queueStatus, nil)
+				h.updateDepositStatus(deposit.ID, pspStatus, nil)
 				deposit.Status = pspStatus
-				deposit.QueueStatus = queueStatus
 
 				// Process successful deposit
 				if pspStatus == "collected" {
-					// Let the queue handle the processing
-					log.Printf("Deposit %s collected, will be processed by queue", deposit.ID.Hex())
+					h.processSuccessfulDeposit(deposit)
 				}
 			}
 		}
@@ -175,10 +163,8 @@ func (h *DepositHandler) CheckDepositStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"id":              deposit.ID.Hex(),
 		"status":          deposit.Status,
-		"queueStatus":     deposit.QueueStatus,
 		"amount":          deposit.Amount,
 		"paymentMethodId": deposit.PaymentMethodID,
-		"processedAt":     deposit.ProcessedAt,
 		"createdAt":       deposit.CreatedAt,
 		"updatedAt":       deposit.UpdatedAt,
 	})
@@ -211,19 +197,13 @@ func (h *DepositHandler) GetDeposits(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"deposits": deposits})
 }
 
-func (h *DepositHandler) updateDepositStatus(depositID primitive.ObjectID, status string, queueStatus string, pspResponse interface{}) {
+func (h *DepositHandler) updateDepositStatus(depositID primitive.ObjectID, status string, pspResponse interface{}) {
 	collection := h.db.Collection("deposits")
 	update := bson.M{
 		"$set": bson.M{
-			"status":      status,
-			"queueStatus": queueStatus,
-			"updatedAt":   time.Now(),
+			"status":    status,
+			"updatedAt": time.Now(),
 		},
-	}
-
-	if status == "collected" || status == "completed" {
-		now := time.Now()
-		update["$set"].(bson.M)["processedAt"] = now
 	}
 
 	if pspResponse != nil {
@@ -231,6 +211,107 @@ func (h *DepositHandler) updateDepositStatus(depositID primitive.ObjectID, statu
 	}
 
 	collection.UpdateOne(context.Background(), bson.M{"_id": depositID}, update)
+}
+
+func (h *DepositHandler) processSuccessfulDeposit(deposit models.Deposit) {
+	// Update user wallet balance
+	walletCollection := h.db.Collection("wallets")
+	
+	// Calculate amounts
+	savingsAmount := deposit.Amount * (100 - deposit.InvestmentPercentage) / 100
+	investmentAmount := deposit.Amount * deposit.InvestmentPercentage / 100
+
+	// Update wallet balance
+	walletCollection.UpdateOne(
+		context.Background(),
+		bson.M{"userId": deposit.UserID},
+		bson.M{
+			"$inc": bson.M{
+				"balance": savingsAmount,
+			},
+			"$set": bson.M{
+				"updatedAt": time.Now(),
+			},
+		},
+	)
+
+	// Create investment record if applicable
+	if investmentAmount > 0 {
+		investmentCollection := h.db.Collection("investments")
+		investment := bson.M{
+			"userId":    deposit.UserID,
+			"amount":    investmentAmount,
+			"type":      "deposit_investment",
+			"status":    "active",
+			"createdAt": time.Now(),
+			"updatedAt": time.Now(),
+		}
+		investmentCollection.InsertOne(context.Background(), investment)
+	}
+
+	// Handle donation if applicable
+	if deposit.DonationChoice != "none" && deposit.DonationChoice != "" {
+		donationCollection := h.db.Collection("donations")
+		donationAmount := 0.0
+		
+		if deposit.DonationChoice == "both" {
+			donationAmount = deposit.Amount
+		} else if deposit.DonationChoice == "profit" {
+			donationAmount = investmentAmount
+		}
+
+		if donationAmount > 0 {
+			donation := bson.M{
+				"userId":     deposit.UserID,
+				"amount":     donationAmount,
+				"type":       deposit.DonationChoice,
+				"depositId":  deposit.ID,
+				"status":     "pending",
+				"createdAt":  time.Now(),
+			}
+			donationCollection.InsertOne(context.Background(), donation)
+		}
+	}
+}
+
+func (h *DepositHandler) detectNetworkFromPhone(phoneNumber string) string {
+	// Remove country code and normalize
+	phone := phoneNumber
+	if len(phone) > 10 {
+		phone = phone[len(phone)-10:] // Get last 10 digits
+	}
+	
+	if len(phone) < 10 {
+		return "MTN" // Default fallback
+	}
+	
+	prefix := phone[:3]
+	
+	// MTN prefixes
+	mtnPrefixes := []string{"024", "054", "055", "059"}
+	for _, p := range mtnPrefixes {
+		if prefix == p {
+			return "MTN"
+		}
+	}
+	
+	// Telecel prefixes
+	telecelPrefixes := []string{"020", "050"}
+	for _, p := range telecelPrefixes {
+		if prefix == p {
+			return "TELECEL"
+		}
+	}
+	
+	// AirtelTigo prefixes
+	airtelPrefixes := []string{"027", "057", "026", "056"}
+	for _, p := range airtelPrefixes {
+		if prefix == p {
+			return "AIRTELTIGO"
+		}
+	}
+	
+	return "MTN" // Default fallback
 }
 
 func (h *DepositHandler) getPaymentMethodByID(userID primitive.ObjectID, paymentMethodID string) (*models.PaymentMethod, error) {
