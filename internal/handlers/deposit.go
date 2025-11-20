@@ -28,9 +28,17 @@ func NewDepositHandler(db *mongo.Database) *DepositHandler {
 }
 
 func (h *DepositHandler) InitiateDeposit(c *gin.Context) {
-	userID, exists := c.Get("userID")
+	// Get userID from context (it's a string from JWT)
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	// Convert string to ObjectID
+	userID, err := primitive.ObjectIDFromHex(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
@@ -41,19 +49,23 @@ func (h *DepositHandler) InitiateDeposit(c *gin.Context) {
 	}
 
 	// Get payment method details
-	paymentMethod, err := h.getPaymentMethodByID(userID.(primitive.ObjectID), req.PaymentMethodID)
+	paymentMethod, err := h.getPaymentMethodByID(userID, req.PaymentMethodID)
 	if err != nil {
+		fmt.Printf("Payment method lookup failed: %v\n", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payment method"})
 		return
 	}
 
+	fmt.Printf("Payment method found: Type=%s, Network=%s, Phone=%s\n", 
+		paymentMethod.Type, paymentMethod.Network, paymentMethod.PhoneNumber)
+
 	// Generate unique reference
-	reference := fmt.Sprintf("DEP_%d_%s", time.Now().Unix(), userID.(primitive.ObjectID).Hex()[:8])
+	reference := fmt.Sprintf("DEP_%d_%s", time.Now().Unix(), userID.Hex()[:8])
 
 	// Create deposit record
 	deposit := models.Deposit{
 		ID:                   primitive.NewObjectID(),
-		UserID:               userID.(primitive.ObjectID),
+		UserID:               userID,
 		Amount:               req.Amount,
 		PaymentMethodID:      req.PaymentMethodID,
 		InvestmentPercentage: req.InvestmentPercentage,
@@ -64,7 +76,7 @@ func (h *DepositHandler) InitiateDeposit(c *gin.Context) {
 		UpdatedAt:            time.Now(),
 	}
 
-	// Save deposit to database
+	// Save deposit to database first
 	collection := h.db.Collection("deposits")
 	_, err = collection.InsertOne(context.Background(), deposit)
 	if err != nil {
@@ -72,9 +84,12 @@ func (h *DepositHandler) InitiateDeposit(c *gin.Context) {
 		return
 	}
 
-	// Initiate PSP collection based on payment method
+	// Initiate PSP collection for mobile money
 	var pspResponse *services.CollectionResponse
 	if paymentMethod.Type == "mobile_money" {
+		fmt.Printf("Initiating PSP collection for mobile money: %s %s\n", 
+			paymentMethod.Network, paymentMethod.PhoneNumber)
+		
 		collectionReq := services.CollectionRequest{
 			Amount:      req.Amount,
 			PhoneNumber: paymentMethod.PhoneNumber,
@@ -84,22 +99,43 @@ func (h *DepositHandler) InitiateDeposit(c *gin.Context) {
 
 		pspResponse, err = h.pspService.InitiateCollection(collectionReq)
 		if err != nil {
+			fmt.Printf("PSP collection failed: %v\n", err)
 			// Update deposit status to failed
 			h.updateDepositStatus(deposit.ID, "failed", nil)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initiate payment collection"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to initiate payment collection: %v", err)})
 			return
 		}
+
+		fmt.Printf("PSP collection successful: TransactionID=%s, Status=%s\n", 
+			pspResponse.TransactionID, pspResponse.Status)
 
 		// Update deposit with PSP response
 		h.updateDepositStatus(deposit.ID, "initiated", pspResponse)
 		deposit.TransactionID = pspResponse.TransactionID
+		deposit.PSPReference = pspResponse.TransactionID
 		deposit.Status = "initiated"
+		
+		// Update the database record with PSP transaction details
+		collection.UpdateOne(context.Background(), bson.M{"_id": deposit.ID}, bson.M{
+			"$set": bson.M{
+				"transactionId": pspResponse.TransactionID,
+				"pspReference": pspResponse.TransactionID,
+				"status": "initiated",
+				"updatedAt": time.Now(),
+			},
+		})
+	} else {
+		fmt.Printf("Non-mobile money payment method, marking as initiated for manual processing\n")
+		// For non-mobile money, mark as initiated for manual processing
+		h.updateDepositStatus(deposit.ID, "initiated", nil)
+		deposit.Status = "initiated"
+		deposit.TransactionID = reference
 	}
 
 	response := models.DepositResponse{
 		ID:            deposit.ID.Hex(),
 		Status:        deposit.Status,
-		Message:       "Deposit initiated successfully",
+		Message:       "Deposit initiated successfully. Please complete payment on your mobile device.",
 		TransactionID: deposit.TransactionID,
 		PSPResponse:   pspResponse,
 	}
@@ -120,9 +156,15 @@ func (h *DepositHandler) CheckDepositStatus(c *gin.Context) {
 		return
 	}
 
-	userID, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	userID, err := primitive.ObjectIDFromHex(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
@@ -131,7 +173,7 @@ func (h *DepositHandler) CheckDepositStatus(c *gin.Context) {
 	var deposit models.Deposit
 	err = collection.FindOne(context.Background(), bson.M{
 		"_id":    objectID,
-		"userId": userID.(primitive.ObjectID),
+		"userId": userID,
 	}).Decode(&deposit)
 
 	if err != nil {
@@ -143,19 +185,17 @@ func (h *DepositHandler) CheckDepositStatus(c *gin.Context) {
 		return
 	}
 
-	// Check PSP status if still pending
-	if deposit.Status == "initiated" || deposit.Status == "pending" {
-		if deposit.TransactionID != "" {
-			pspStatus, err := h.pspService.CheckCollectionStatus(deposit.TransactionID)
-			if err == nil && pspStatus != deposit.Status {
-				// Update status if changed
-				h.updateDepositStatus(deposit.ID, pspStatus, nil)
-				deposit.Status = pspStatus
+	// Check PSP status if still pending/initiated
+	if (deposit.Status == "initiated" || deposit.Status == "pending") && deposit.TransactionID != "" {
+		pspStatus, err := h.pspService.CheckCollectionStatus(deposit.TransactionID)
+		if err == nil && pspStatus != deposit.Status {
+			// Update status if changed
+			h.updateDepositStatus(deposit.ID, pspStatus, nil)
+			deposit.Status = pspStatus
 
-				// Process successful deposit
-				if pspStatus == "collected" {
-					h.processSuccessfulDeposit(deposit)
-				}
+			// Process successful deposit
+			if pspStatus == "collected" || pspStatus == "success" {
+				h.processSuccessfulDeposit(deposit)
 			}
 		}
 	}
@@ -165,21 +205,28 @@ func (h *DepositHandler) CheckDepositStatus(c *gin.Context) {
 		"status":          deposit.Status,
 		"amount":          deposit.Amount,
 		"paymentMethodId": deposit.PaymentMethodID,
+		"queueStatus":     deposit.QueueStatus,
 		"createdAt":       deposit.CreatedAt,
 		"updatedAt":       deposit.UpdatedAt,
 	})
 }
 
 func (h *DepositHandler) GetDeposits(c *gin.Context) {
-	userID, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
+	userID, err := primitive.ObjectIDFromHex(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
 	collection := h.db.Collection("deposits")
 	cursor, err := collection.Find(context.Background(), bson.M{
-		"userId": userID.(primitive.ObjectID),
+		"userId": userID,
 	})
 
 	if err != nil {
@@ -208,6 +255,12 @@ func (h *DepositHandler) updateDepositStatus(depositID primitive.ObjectID, statu
 
 	if pspResponse != nil {
 		update["$set"].(bson.M)["pspResponse"] = pspResponse
+		
+		// If pspResponse is a CollectionResponse, extract transaction ID
+		if collResp, ok := pspResponse.(*services.CollectionResponse); ok {
+			update["$set"].(bson.M)["transactionId"] = collResp.TransactionID
+			update["$set"].(bson.M)["pspReference"] = collResp.TransactionID
+		}
 	}
 
 	collection.UpdateOne(context.Background(), bson.M{"_id": depositID}, update)
@@ -330,8 +383,8 @@ func (h *DepositHandler) getPaymentMethodByID(userID primitive.ObjectID, payment
 	collection := h.db.Collection("payment_methods")
 	var paymentMethod models.PaymentMethod
 	err = collection.FindOne(context.Background(), bson.M{
-		"_id":    objectID,
-		"user_id": userID,
+		"_id":       objectID,
+		"user_id":   userID,
 		"is_active": true,
 	}).Decode(&paymentMethod)
 
