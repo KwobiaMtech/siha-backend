@@ -597,16 +597,18 @@ func (h *TransactionHandler) GetTransactions(c *gin.Context) {
 	}
 
 	collection := h.db.Collection("transactions")
-	// Sort by created_at descending to get latest first
-	opts := options.Find().SetSort(bson.D{{"created_at", -1}})
-	cursor, err := collection.Find(context.Background(), bson.M{"from_user_id": userID}, opts)
+	// Sort by createdAt descending to get latest first
+	opts := options.Find().SetSort(bson.D{{"createdAt", -1}})
+	
+	// Get all transactions for this user (deposits, sends, receives)
+	cursor, err := collection.Find(context.Background(), bson.M{"userId": userID}, opts)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch transactions"})
 		return
 	}
 	defer cursor.Close(context.Background())
 
-	var transactions []models.Transaction
+	var transactions []models.UnifiedTransaction
 	if err := cursor.All(context.Background(), &transactions); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode transactions"})
 		return

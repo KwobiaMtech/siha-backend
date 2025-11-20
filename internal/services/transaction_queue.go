@@ -147,7 +147,7 @@ func (tq *TransactionQueue) processPendingDeposits() {
 	}
 	defer cursor.Close(context.Background())
 
-	var pendingDeposits []models.Deposit
+	var pendingDeposits []models.UnifiedTransaction
 	if err := cursor.All(context.Background(), &pendingDeposits); err != nil {
 		log.Printf("Error decoding deposits: %v", err)
 		return
@@ -216,7 +216,7 @@ func (tq *TransactionQueue) processPendingDeposits() {
 	}
 }
 
-func (tq *TransactionQueue) processSuccessfulDeposit(deposit models.Deposit) {
+func (tq *TransactionQueue) processSuccessfulDeposit(deposit models.UnifiedTransaction) {
 	// Update user wallet balance
 	walletCollection := tq.db.Collection("wallets")
 	
